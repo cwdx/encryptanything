@@ -1,9 +1,17 @@
 <template>
+  <h1>Encrypt Anything</h1>
   <div id="nav">
     <router-link to="/">Home</router-link> |
     <router-link to="/about">About</router-link>
   </div>
   <router-view />
+
+  <footer>
+    <small
+      >This product is a beta release. The author takes no responsibility for
+      loss of data.</small
+    >
+  </footer>
 </template>
 
 <style lang="scss">

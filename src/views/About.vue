@@ -1,5 +1,5 @@
 <template>
   <div class="about">
-    <h1>This is an about page</h1>
+    <p>This is a product by <a href="https://comwidedigital.com">cwdx</a></p>
   </div>
 </template>
