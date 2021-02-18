@@ -112,6 +112,8 @@ export default defineComponent({
 .home {
   padding: 1rem;
   text-align: left;
+  max-width: 500px;
+  margin: auto;
 }
 
 textarea {
