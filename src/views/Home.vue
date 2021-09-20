@@ -1,32 +1,45 @@
 <template>
   <div class="home">
-    <button
-      type="button"
-      @click="
-        form.mode = 0;
-        reset();
-      "
-    >
-      Encrypt
-    </button>
-    <button
-      type="button"
-      @click="
-        form.mode = 1;
-        reset();
-      "
-    >
-      Decrypt
-    </button>
+    <pre v-if="form.debug">{{ form }}</pre>
+    <nav>
+      <a
+        href="#encrypt"
+        :class="{ active: form.mode === 0 }"
+        @click.prevent="
+          form.mode = 0;
+          reset();
+        "
+        v-text="'Encrypt'"
+      />
+      |
+      <a
+        :class="{ active: form.mode === 1 }"
+        href="#decrypt"
+        @click.prevent="
+          form.mode = 1;
+          reset();
+        "
+        v-text="'Decrypt'"
+      />
+    </nav>
 
     <form @submit.prevent="encryptValue" class="encrypt" v-if="form.mode === 0">
-      <input v-model="form.key" type="text" placeholder="key" />
+      <div>
+        <input type="checkbox" v-model="form.iv" placeholder="IV" id="iv" />
+        <label for="iv">Use Initialization Vector</label>
+      </div>
+      <div>
+        <input v-model="form.key" type="text" placeholder="key" />
+        <small>
+          <a href="#generate-key" @click.prevent="generateKeyValue">
+            generate
+          </a>
+        </small>
+      </div>
+
       <textarea v-model="form.value" placeholder="value" />
       <textarea readonly v-if="form.output" v-model="form.output" />
-      <button>encrypt</button>
-      <button type="button" @click.prevent="generateKeyValue">
-        generate key
-      </button>
+      <button>submit</button>
     </form>
 
     <form @submit.prevent="decryptValue" class="decrypt" v-if="form.mode === 1">
@@ -47,20 +60,28 @@ export default defineComponent({
   setup() {
     const form = reactive({
       mode: 0 as 0 | 1,
+      iv: false,
       key: "",
       value: "",
       generatedKey: "",
       output: "",
+      debug: false
     });
 
-    const { encrypt, decrypt, generateKey } = useCrypto();
+    const { generateKey, cryptr } = useCrypto();
 
     const encryptValue = () => {
-      if (form.key.length !== 32) {
-        return alert("Please provide a 32 character long key");
+      const iv = !!form.iv;
+
+      if (iv && form.key.length !== 32) {
+        return alert("Please enter a 32 character long key");
+      } else if (!form.value.trim()) {
+        return alert("Please enter a value");
       }
       try {
-        const value = encrypt(form.value, form.key);
+        const value = iv
+          ? cryptr.encryptIv(form.value, form.key)
+          : cryptr.encrypt(form.value, form.key);
         form.output = value;
       } catch (e) {
         alert("Could not encrypt data");
@@ -69,16 +90,18 @@ export default defineComponent({
     };
 
     const decryptValue = () => {
-      if (form.key.length !== 32) {
+      const iv = !!form.iv;
+      if (iv && form.key.length !== 32) {
         return alert("Please provide a 32 character long key");
       }
       try {
-        const value = decrypt(form.value, form.key);
+        const value = cryptr.decrypt(form.value, form.key);
         form.output = value;
         console.log(value);
       } catch (e) {
         alert("Could not decrypt data");
         console.warn(e.message);
+        console.warn(e);
       }
     };
 
@@ -98,9 +121,9 @@ export default defineComponent({
       decryptValue,
       generateKeyValue,
       form,
-      reset,
+      reset
     };
-  },
+  }
 });
 </script>
 
@@ -116,26 +139,44 @@ export default defineComponent({
   margin: auto;
 }
 
+a {
+  color: #2c3e50;
+}
+
+.active {
+  color: #42b983;
+}
+
+form {
+  margin-top: 1rem;
+}
+
 textarea {
   resize: vertical;
 }
 
 button,
-input,
-textarea,
+form > div,
+form > input[type="text"],
+form > textarea,
 select {
   margin-bottom: 0.75rem;
   font: inherit;
 }
 
-input,
+button,
+nav a {
+  font-weight: bold;
+}
+
+input[type="text"],
 textarea,
 select {
   display: block;
   width: 100%;
 }
 
-input,
+input[type="text"],
 textarea {
   font-family: monospace;
 }

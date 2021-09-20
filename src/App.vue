@@ -1,9 +1,11 @@
 <template>
-  <h1>Encrypt Anything</h1>
   <div id="nav">
     <router-link to="/">Home</router-link> |
     <router-link to="/about">About</router-link>
   </div>
+
+  <h1>Encrypt Anything</h1>
+
   <router-view />
 
   <footer>
