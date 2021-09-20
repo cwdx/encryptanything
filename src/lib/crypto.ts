@@ -2,7 +2,6 @@
 const crypto = require("crypto");
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { Buffer } = require("buffer");
-const algorithm = "aes-256-cbc";
 
 export function generateKey(leng = 16) {
   const iv = crypto.randomBytes(leng);
@@ -18,7 +17,7 @@ interface Cryptr {
 const cryptr: Cryptr = {
   encryptIv(value: string, key: string, algo = "aes-256-cbc"): string {
     const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(key), iv);
+    const cipher = crypto.createCipheriv(algo, Buffer.from(key), iv);
     let encrypted = cipher.update(value);
     encrypted = Buffer.concat([encrypted, cipher.final()]);
     return `${algo}:${encrypted.toString("hex")}:${iv.toString("hex")}`;
@@ -48,23 +47,4 @@ const cryptr: Cryptr = {
   }
 };
 
-export function encrypt(value: string, key: string): string {
-  const iv = crypto.randomBytes(16);
-  const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(key), iv);
-  let encrypted = cipher.update(value);
-  encrypted = Buffer.concat([encrypted, cipher.final()]);
-  return `${algorithm}:${encrypted.toString("hex")}:${iv.toString("hex")}`;
-}
-
-export function decrypt(value: string, key: string): string {
-  let [algo, data, iv] = value.split(":");
-  algo = algo += "";
-  iv = Buffer.from(iv, "hex");
-  data = Buffer.from(data, "hex");
-  const decipher = crypto.createDecipheriv(algo, Buffer.from(key), iv);
-  let decrypted = decipher.update(data);
-  decrypted = Buffer.concat([decrypted, decipher.final()]);
-  return decrypted.toString();
-}
-
-export const useCrypto = () => ({ encrypt, decrypt, generateKey, cryptr });
+export const useCrypto = () => ({ generateKey, cryptr });
