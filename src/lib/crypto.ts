@@ -8,6 +8,9 @@ export function generateKey(leng = 16) {
   return iv.toString("hex");
 }
 
+const algos = ["aes-256-cbc", "aes256"];
+const defaultAlgo = "aes-256-cbc";
+
 interface Cryptr {
   encryptIv(value: string, key: string, algo?: string): string;
   encrypt(value: string, key: string, algo?: string): string;
@@ -15,14 +18,14 @@ interface Cryptr {
 }
 
 const cryptr: Cryptr = {
-  encryptIv(value: string, key: string, algo = "aes-256-cbc"): string {
+  encryptIv(value: string, key: string, algo = defaultAlgo): string {
     const iv = crypto.randomBytes(16);
     const cipher = crypto.createCipheriv(algo, Buffer.from(key), iv);
     let encrypted = cipher.update(value);
     encrypted = Buffer.concat([encrypted, cipher.final()]);
     return `${algo}:${encrypted.toString("hex")}:${iv.toString("hex")}`;
   },
-  encrypt(value: string, key: string, algo = "aes256"): string {
+  encrypt(value: string, key: string, algo = defaultAlgo): string {
     const cipher = crypto.createCipher("aes256", key);
     const encrypted = cipher.update(value, "utf8", "hex") + cipher.final("hex");
     return `${algo}:${encrypted.toString("hex")}`;
@@ -47,4 +50,4 @@ const cryptr: Cryptr = {
   }
 };
 
-export const useCrypto = () => ({ generateKey, cryptr });
+export const useCrypto = () => ({ generateKey, cryptr, defaultAlgo, algos });

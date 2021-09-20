@@ -29,6 +29,14 @@
         <label for="iv">Use Initialization Vector</label>
       </div>
       <div>
+        <select v-model="form.algo" id="algo">
+          <option value="" disabled>- Select Algorithm -</option>
+          <option v-for="(algo, i) of algos" :key="i">{{ algo }}</option>
+        </select>
+        <label for="algo" hidden>Algorithm</label>
+      </div>
+
+      <div>
         <input v-model="form.key" type="text" placeholder="key" />
         <small>
           <a href="#generate-key" @click.prevent="generateKeyValue">
@@ -39,14 +47,14 @@
 
       <textarea v-model="form.value" placeholder="value" />
       <textarea readonly v-if="form.output" v-model="form.output" />
-      <button>submit</button>
+      <button type="submit">submit</button>
     </form>
 
     <form @submit.prevent="decryptValue" class="decrypt" v-if="form.mode === 1">
-      <input v-model="form.key" type="text" placeholder="key" />
       <textarea v-model="form.value" placeholder="value" />
+      <input v-model="form.key" type="text" placeholder="key" />
       <textarea readonly v-if="form.output" v-model="form.output" />
-      <button>decrypt</button>
+      <button type="submit">decrypt</button>
     </form>
   </div>
 </template>
@@ -58,6 +66,8 @@ import { useCrypto } from "@/lib/crypto";
 export default defineComponent({
   name: "Home",
   setup() {
+    const { generateKey, cryptr, defaultAlgo, algos } = useCrypto();
+
     const form = reactive({
       mode: 0 as 0 | 1,
       iv: false,
@@ -65,10 +75,9 @@ export default defineComponent({
       value: "",
       generatedKey: "",
       output: "",
-      debug: false
+      debug: false,
+      algo: defaultAlgo
     });
-
-    const { generateKey, cryptr } = useCrypto();
 
     const encryptValue = () => {
       const iv = !!form.iv;
@@ -80,8 +89,8 @@ export default defineComponent({
       }
       try {
         const value = iv
-          ? cryptr.encryptIv(form.value, form.key)
-          : cryptr.encrypt(form.value, form.key);
+          ? cryptr.encryptIv(form.value, form.key, form.algo)
+          : cryptr.encrypt(form.value, form.key, form.algo);
         form.output = value;
       } catch (e) {
         alert("Could not encrypt data");
@@ -92,7 +101,11 @@ export default defineComponent({
     const decryptValue = () => {
       const iv = !!form.iv;
       if (iv && form.key.length !== 32) {
-        return alert("Please provide a 32 character long key");
+        return alert("Please enter a 32 character long key");
+      } else if (!form.value.trim()) {
+        return alert("Please enter a value");
+      } else if (!form.key.trim()) {
+        return alert("Please enter a key");
       }
       try {
         const value = cryptr.decrypt(form.value, form.key);
@@ -121,7 +134,8 @@ export default defineComponent({
       decryptValue,
       generateKeyValue,
       form,
-      reset
+      reset,
+      algos
     };
   }
 });
