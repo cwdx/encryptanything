@@ -21,9 +21,31 @@
         "
         v-text="'Decrypt'"
       />
+      |
+      <a
+        :class="{ active: form.mode === 2 }"
+        href="#words"
+        @click.prevent="
+          form.mode = 2;
+          reset();
+        "
+        v-text="'Encrypt Words'"
+      />
+      |
+      <a
+        :class="{ active: form.mode === 3 }"
+        href="#words"
+        @click.prevent="
+          form.mode = 3;
+          reset();
+        "
+        v-text="'Decrypt Words'"
+      />
     </nav>
 
     <form @submit.prevent="encryptValue" class="encrypt" v-if="form.mode === 0">
+      <ScanQr @capture="form.value = $event" @error="error($event)" />
+
       <div>
         <input type="checkbox" v-model="form.iv" placeholder="IV" id="iv" />
         <label for="iv">Use Initialization Vector</label>
@@ -47,36 +69,78 @@
 
       <textarea v-model="form.value" placeholder="value" />
       <textarea readonly v-if="form.output" v-model="form.output" />
-      <button type="submit">submit</button>
+      <Qr v-model="form.output" />
+
+      <button type="submit">encrypt</button>
     </form>
 
-    <form @submit.prevent="decryptValue" class="decrypt" v-if="form.mode === 1">
+    <form class="decrypt" v-if="form.mode === 1" @submit.prevent="decryptValue">
+      <ScanQr @capture="form.value = $event" @error="error($event)" />
+
       <textarea v-model="form.value" placeholder="value" />
       <input v-model="form.key" type="text" placeholder="key" />
       <textarea readonly v-if="form.output" v-model="form.output" />
       <button type="submit">decrypt</button>
     </form>
+
+    <form class="decrypt" v-if="form.mode === 2">
+      <ScanQr @capture="form.words = $event" @error="error($event)" />
+
+      <textarea v-model="form.words" placeholder="words" />
+
+      <input type="number" v-model.number="form.offset" placeholder="offset" />
+      <textarea
+        readonly
+        v-if="encryptedWords"
+        :value="encryptedWords"
+        placeholder="words"
+      />
+      <Qr v-model="encryptedWords" />
+    </form>
+
+    <form class="decrypt" v-if="form.mode === 3">
+      <ScanQr @capture="form.words = $event" @error="error($event)" />
+
+      <textarea v-model="form.words" placeholder="codes" />
+
+      <input type="number" v-model.number="form.offset" placeholder="offset" />
+      <textarea
+        readonly
+        v-if="decryptedWords"
+        :value="decryptedWords"
+        placeholder="words"
+      />
+    </form>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive } from "vue";
+import { computed, defineComponent, reactive, ref } from "vue";
 import { useCrypto } from "@/lib/crypto";
+import Qr from "@/components/Qr/Qr.vue";
+import ScanQr from "@/components/Qr/ScanQr.vue";
+import wordlist from "@/assets/wordlist";
 
 export default defineComponent({
   name: "Home",
+  components: {
+    Qr,
+    ScanQr
+  },
   setup() {
     const { generateKey, cryptr, defaultAlgo, algos } = useCrypto();
-
+    const url = ref("");
     const form = reactive({
-      mode: 0 as 0 | 1,
+      mode: 0 as 0 | 1 | 2 | 3,
       iv: false,
       key: "",
       value: "",
       generatedKey: "",
       output: "",
       debug: false,
-      algo: defaultAlgo
+      algo: defaultAlgo,
+      offset: 0,
+      words: ""
     });
 
     const encryptValue = () => {
@@ -127,7 +191,30 @@ export default defineComponent({
       form.key = "";
       form.generatedKey = "";
       form.output = "";
+      form.words = "";
     };
+
+    const encryptedWords = computed(() => {
+      const words = form.words
+        .trim()
+        .split(/\s+/)
+        .filter(w => !!w)
+        .map(w => wordlist.indexOf(w.trim()));
+      if (words.includes(-1)) return "";
+      return words.map(w => w + form.offset).join(" ");
+    });
+
+    const decryptedWords = computed(() => {
+      const words = form.words
+        .trim()
+        .split(/\s+/)
+        .filter(w => w !== "")
+        .map(v => +v - form.offset)
+        .map(n => wordlist[n])
+        .join(" ");
+
+      return words;
+    });
 
     return {
       encryptValue,
@@ -135,7 +222,11 @@ export default defineComponent({
       generateKeyValue,
       form,
       reset,
-      algos
+      algos,
+      url,
+      error: (str: string) => alert(str),
+      encryptedWords,
+      decryptedWords
     };
   }
 });
@@ -172,6 +263,7 @@ textarea {
 button,
 form > div,
 form > input[type="text"],
+form > input[type="number"],
 form > textarea,
 select {
   margin-bottom: 0.75rem;
@@ -184,6 +276,7 @@ nav a {
 }
 
 input[type="text"],
+input[type="number"],
 textarea,
 select {
   display: block;
@@ -191,6 +284,7 @@ select {
 }
 
 input[type="text"],
+input[type="number"],
 textarea {
   font-family: monospace;
 }
