@@ -1,20 +1,33 @@
 <template>
   <div id="nav">
-    <router-link to="/">Home</router-link> |
+    <router-link to="/">EncryptAnything</router-link> |
+    <router-link to="/tools">Tools</router-link> |
     <router-link to="/about">About</router-link>
   </div>
-
-  <h1>Encrypt Anything</h1>
 
   <router-view />
 
   <footer>
     <small
-      >This product is a beta release. The author takes no responsibility for
-      loss of data.</small
+      >{{ footer }} is a beta release.<br />
+      The author takes no responsibility for loss of data.</small
     >
   </footer>
 </template>
+
+<script lang="ts">
+import { defineComponent } from "vue";
+import pkg from "../package.json";
+
+export default defineComponent({
+  setup() {
+    const footer = pkg.name + " v" + pkg.version;
+    return {
+      footer
+    };
+  }
+});
+</script>
 
 <style lang="scss">
 #app {
